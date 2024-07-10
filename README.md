@@ -1,1 +1,0 @@
-# cyclonedx-sbom-editor

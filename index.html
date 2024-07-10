@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBOM Editor</title>
+    <style>
+        body,
+        html {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background-color: #f0f0f0;
+        }
+
+        .fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #drop-zone {
+            background-color: #ffffff;
+            transition: background-color 0.3s ease;
+        }
+
+        #drop-zone.dragover {
+            background-color: #e0e0e0;
+        }
+
+        .drop-content {
+            text-align: center;
+            padding: 40px;
+            border: 3px dashed #ccc;
+            border-radius: 10px;
+            background-color: #ffffff;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .file-input-label,
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1em;
+            border: none;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .file-input-label:hover,
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        #loading {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #sbom-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        #sbom-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #component-count {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            display: inline-block;
+            margin-right: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s ease;
+        }
+
+        td:last-child {
+            white-space: nowrap;
+        }
+
+        .edit-btn {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .clone-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .clone-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        #edit-modal {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .edit-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        #edit-area {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .button-group {
+            text-align: right;
+        }
+
+        .button-group button {
+            margin-left: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="drop-zone" class="fullscreen">
+        <div class="drop-content">
+            <h1>SBOM Editor</h1>
+            <p>Drag and drop CycloneDX JSON SBOM file here</p>
+            <p>or</p>
+            <input type="file" id="file-input" accept=".json">
+            <label for="file-input" class="file-input-label">Browse Files</label>
+        </div>
+    </div>
+    <div id="loading" class="fullscreen hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+    <div id="sbom-container" class="hidden">
+        <div id="sbom-info">
+            <p id="component-count"></p>
+            <button id="download-btn" class="btn">Download SBOM</button>
+        </div>
+        <table id="sbom-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>License</th>
+                    <th>Author</th>
+                    <th>Version</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="sbom-body"></tbody>
+        </table>
+    </div>
+    <div id="edit-modal" class="fullscreen hidden">
+        <div class="edit-content">
+            <h2>Edit Component</h2>
+            <textarea id="edit-area"></textarea>
+            <div class="button-group">
+                <button id="save-edit" class="btn">Save</button>
+                <button id="cancel-edit" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let sbomData = null;
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const loading = document.getElementById('loading');
+        const sbomContainer = document.getElementById('sbom-container');
+        const componentCount = document.getElementById('component-count');
+        const sbomTable = document.getElementById('sbom-table');
+        const sbomBody = document.getElementById('sbom-body');
+        const downloadBtn = document.getElementById('download-btn');
+        const editModal = document.getElementById('edit-modal');
+        const editArea = document.getElementById('edit-area');
+        const saveEditBtn = document.getElementById('save-edit');
+        const cancelEditBtn = document.getElementById('cancel-edit');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                readFile(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                readFile(file);
+            }
+        });
+
+        function readFile(file) {
+            dropZone.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const jsonString = e.target.result;
+                    parseJSONStream(jsonString);
+                } catch (error) {
+                    console.error("Error reading file:", error);
+                    alert("Error reading file. Please try again.");
+                    dropZone.classList.remove('hidden');
+                } finally {
+                    loading.classList.add('hidden');
+                }
+            };
+            reader.onerror = (error) => {
+                console.error("FileReader error:", error);
+                alert("Error reading file. Please try again.");
+                loading.classList.add('hidden');
+                dropZone.classList.remove('hidden');
+            };
+            reader.readAsText(file);
+        }
+
+        function parseJSONStream(jsonString) {
+            try {
+                sbomData = JSON.parse(jsonString);
+                if (sbomData.bomFormat === "CycloneDX" && sbomData.specVersion) {
+                    displaySBOM();
+                } else {
+                    alert("Invalid SBOM format. Please ensure it's a CycloneDX JSON SBOM.");
+                    dropZone.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("JSON parsing error:", error);
+                alert("Error parsing SBOM file. Please make sure it's a valid JSON file.");
+                dropZone.classList.remove('hidden');
+            }
+        }
+
+        function displaySBOM() {
+            if (!sbomData || !sbomData.components) {
+                alert("Invalid SBOM structure. Missing components array.");
+                dropZone.classList.remove('hidden');
+                return;
+            }
+
+            componentCount.textContent = `Total components: ${sbomData.components.length}`;
+            sbomContainer.classList.remove('hidden');
+            sbomBody.innerHTML = '';
+
+            sbomData.components.forEach((component, index) => {
+                const row = sbomBody.insertRow();
+                row.insertCell(0).textContent = component.name || 'N/A';
+                row.insertCell(1).textContent = getLicenseText(component);
+                row.insertCell(2).textContent = component.author || 'N/A';
+                row.insertCell(3).textContent = component.version || 'N/A';
+
+                const actionsCell = row.insertCell(4);
+                actionsCell.appendChild(createButton('Edit', 'edit-btn', () => editComponent(index)));
+                actionsCell.appendChild(createButton('Clone', 'clone-btn', () => cloneComponent(index)));
+                actionsCell.appendChild(createButton('Delete', 'delete-btn', () => deleteComponent(index)));
+            });
+        }
+
+        function getLicenseText(component) {
+            if (!component.licenses) return 'N/A';
+            return component.licenses.map(l => {
+                if (typeof l === 'string') return l;
+                if (l.license) {
+                    if (typeof l.license === 'string') return l.license;
+                    if (l.license.id) return l.license.id;
+                    if (l.license.name) return l.license.name;
+                }
+                return 'Unknown';
+            }).join(', ');
+        }
+
+        function createButton(text, className, onClick) {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.className = `action-btn ${className}`;
+            button.addEventListener('click', onClick);
+            return button;
+        }
+
+        function editComponent(index) {
+            editArea.value = JSON.stringify(sbomData.components[index], null, 2);
+            sbomContainer.classList.add('hidden');
+            editModal.classList.remove('hidden');
+
+            saveEditBtn.onclick = () => {
+                try {
+                    sbomData.components[index] = JSON.parse(editArea.value);
+                    editModal.classList.add('hidden');
+                    sbomContainer.classList.remove('hidden');
+                    displaySBOM();
+                } catch (error) {
+                    alert("Invalid JSON. Please check your input.");
+                }
+            };
+        }
+
+        function cloneComponent(index) {
+            const clonedComponent = JSON.parse(JSON.stringify(sbomData.components[index]));
+            sbomData.components.splice(index + 1, 0, clonedComponent);
+            displaySBOM();
+        }
+
+        function deleteComponent(index) {
+            sbomData.components.splice(index, 1);
+            displaySBOM();
+        }
+
+        cancelEditBtn.addEventListener('click', () => {
+            editModal.classList.add('hidden');
+            sbomContainer.classList.remove('hidden');
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(sbomData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sbom_edited.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+
+</html>
