@@ -1,0 +1,58 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.4.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "version": 1,
+  "serialNumber": "urn:uuid:123e4567-e89b-12d3-a456-426614174000",
+  "metadata": {
+    "timestamp": "2024-07-10T12:00:00Z",
+    "tools": [
+      {
+        "vendor": "ExampleToolVendor",
+        "name": "ExampleTool",
+        "version": "1.0.0"
+      }
+    ],
+    "authors": [
+      {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "organization": "ExampleCorp"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "Example Application",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "ExampleComponent",
+      "version": "1.0.0",
+      "description": "A sample component",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0 AND (MIT OR GPL-2.0-only)"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.example/ExampleComponent@1.0.0",
+      "properties": [
+        {
+          "name": "example:property",
+          "value": "value"
+        }
+      ]
+    }
+  ]
+}
