@@ -74,6 +74,13 @@
             background-color: #45a049;
         }
 
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
         #loading {
             background-color: rgba(255, 255, 255, 0.8);
         }
@@ -225,8 +232,11 @@
             <h1>SBOM Editor</h1>
             <p>Drag and drop CycloneDX JSON SBOM file here</p>
             <p>or</p>
-            <input type="file" id="file-input" accept=".json">
-            <label for="file-input" class="file-input-label">Browse Files</label>
+            <div class="button-container">
+                <input type="file" id="file-input" accept=".json">
+                <label for="file-input" class="file-input-label">Browse Files</label>
+                <button id="example-btn" class="btn">Example File</button>
+            </div>
         </div>
     </div>
     <div id="loading" class="fullscreen hidden">
@@ -278,6 +288,30 @@
         const editArea = document.getElementById('edit-area');
         const saveEditBtn = document.getElementById('save-edit');
         const cancelEditBtn = document.getElementById('cancel-edit');
+
+        document.getElementById('example-btn').addEventListener('click', () => {
+            dropZone.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            fetch('example_sbom_cyclonedx.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load example SBOM');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    sbomData = data;
+                    loading.classList.add('hidden');
+                    displaySBOM();
+                })
+                .catch(error => {
+                    console.error('Error loading example SBOM:', error);
+                    alert('Error loading example SBOM file');
+                    loading.classList.add('hidden');
+                    dropZone.classList.remove('hidden');
+                });
+        });
 
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
