@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBOM Format Converter - SPDX ↔ CycloneDX</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pico.css/1.5.10/pico.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #f5f7fa;
+            color: #1a1a1a;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .converter-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: #fff;
+            padding: 0.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+            color: #666;
+        }
+
+        .toggle-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        #drop-zone {
+            border: 2px dashed #cbd5e1;
+            padding: 2rem;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        #drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .error {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .success {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #dcfce7;
+        }
+
+        #download-btn {
+            display: none;
+            margin-top: 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        #download-btn:hover {
+            background: #2563eb;
+        }
+
+        .debug-container {
+            margin-top: 2rem;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .debug-header {
+            background-color: #f8fafc;
+            padding: 1rem;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .debug-content {
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            background-color: white;
+            white-space: pre-wrap;
+            font-family: 'Menlo', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .debug-container.expanded .debug-content {
+            display: block;
+        }
+
+        .debug-header .toggle-icon::after {
+            content: '▼';
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .debug-container.expanded .debug-header .toggle-icon::after {
+            transform: rotate(180deg);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>SBOM Format Converter</h1>
+            <p>Convert between SPDX and CycloneDX formats seamlessly</p>
+        </div>
+
+        <div class="converter-toggle">
+            <button id="spdx-to-cdx" class="toggle-btn active">SPDX → CycloneDX</button>
+            <button id="cdx-to-spdx" class="toggle-btn">CycloneDX → SPDX</button>
+        </div>
+
+        <div id="drop-zone">
+            <p>Drag and drop your SBOM file here or</p>
+            <input type="file" id="file-input" accept=".json">
+        </div>
+
+        <div id="status"></div>
+        <button id="download-btn">Download Converted SBOM</button>
+
+        <div class="debug-container">
+            <div class="debug-header">
+                <span>Debug Log</span>
+                <span class="toggle-icon"></span>
+            </div>
+            <div id="debug" class="debug-content"></div>
+        </div>
+    </div>
+
+    <py-script src="./main.py"></py-script>
+</body>
+
+</html>
